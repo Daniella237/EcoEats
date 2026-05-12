@@ -1,13 +1,36 @@
+import type { AddItemToCartCommandResult } from '../../application/use-cases/add-item-to-cart.use-case.js';
+import type { PlaceOrderInput } from '../../application/use-cases/place-order.use-case.js';
 import type { MemoryEcoRoot } from '../../composition/memory-root.js';
 import type { SqliteEcoRoot } from '../../composition/sqlite-root.js';
-import type { PlaceOrderInput } from '../../application/use-cases/place-order.use-case.js';
+import type { Cart } from '../../domain/entities/cart.js';
 import type { MenuItem } from '../../domain/entities/menu-item.js';
 
 export type EcoHttpRoot = MemoryEcoRoot | SqliteEcoRoot;
 
+/** Corps pour ajouter une ligne au panier (état panier côté client, sans session serveur). */
+export interface AddCartItemBody {
+  readonly cart: Cart;
+  readonly restaurantId: string;
+  readonly menuItemId: string;
+  readonly quantity: number;
+}
+
+/** Après choix utilisateur : vider le panier puis ajouter depuis ce restaurant. */
+export interface ReplaceCartAddBody {
+  readonly restaurantId: string;
+  readonly menuItemId: string;
+  readonly quantity: number;
+}
+
 export function createEcoHttpHandlers(root: EcoHttpRoot) {
   return {
     getCatalog: async () => root.browseMenus.execute(),
+
+    postAddCartItem: async (body: AddCartItemBody): Promise<AddItemToCartCommandResult> =>
+      root.addToCart.execute(body.cart, body.restaurantId, body.menuItemId, body.quantity),
+
+    postReplaceCartAndAddItem: async (body: ReplaceCartAddBody): Promise<AddItemToCartCommandResult> =>
+      root.addToCart.executeAfterReplace(body.restaurantId, body.menuItemId, body.quantity),
 
     postPlaceOrder: async (body: PlaceOrderInput) => root.placeOrder.execute(body),
 

@@ -2,7 +2,11 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import type { PlaceOrderInput } from '../../application/use-cases/place-order.use-case.js';
 import { createMemoryEcoRoot } from '../../composition/memory-root.js';
 import { createSqliteEcoRoot } from '../../composition/sqlite-root.js';
-import { createEcoHttpHandlers } from '../http/eco-http-handlers.js';
+import {
+  createEcoHttpHandlers,
+  type AddCartItemBody,
+  type ReplaceCartAddBody,
+} from '../http/eco-http-handlers.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const persistence = process.env.PERSISTENCE ?? 'memory';
@@ -18,6 +22,78 @@ app.use(express.json());
 app.get('/api/catalog', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await h.getCatalog());
+  } catch (e) {
+    next(e);
+  }
+});
+
+function isCartShape(value: unknown): value is AddCartItemBody['cart'] {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  const o = value as { restaurantId?: unknown; lines?: unknown };
+  return (
+    ('restaurantId' in o && (o.restaurantId === null || typeof o.restaurantId === 'string')) &&
+    Array.isArray(o.lines)
+  );
+}
+
+app.post('/api/cart/items', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = req.body as Partial<AddCartItemBody>;
+    if (!isCartShape(body.cart)) {
+      res.status(400).json({
+        ok: false,
+        reason: 'invalid_body',
+        message: 'cart attendu : { restaurantId: string | null, lines: { menuItemId, quantity }[] }',
+      });
+      return;
+    }
+    if (
+      typeof body.restaurantId !== 'string' ||
+      typeof body.menuItemId !== 'string' ||
+      typeof body.quantity !== 'number'
+    ) {
+      res.status(400).json({
+        ok: false,
+        reason: 'invalid_body',
+        message: 'restaurantId, menuItemId (string) et quantity (number) requis',
+      });
+      return;
+    }
+    const payload: AddCartItemBody = {
+      cart: body.cart,
+      restaurantId: body.restaurantId,
+      menuItemId: body.menuItemId,
+      quantity: body.quantity,
+    };
+    res.json(await h.postAddCartItem(payload));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/api/cart/items/replace', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = req.body as Partial<ReplaceCartAddBody>;
+    if (
+      typeof body.restaurantId !== 'string' ||
+      typeof body.menuItemId !== 'string' ||
+      typeof body.quantity !== 'number'
+    ) {
+      res.status(400).json({
+        ok: false,
+        reason: 'invalid_body',
+        message: 'restaurantId, menuItemId (string) et quantity (number) requis',
+      });
+      return;
+    }
+    const payload: ReplaceCartAddBody = {
+      restaurantId: body.restaurantId,
+      menuItemId: body.menuItemId,
+      quantity: body.quantity,
+    };
+    res.json(await h.postReplaceCartAndAddItem(payload));
   } catch (e) {
     next(e);
   }

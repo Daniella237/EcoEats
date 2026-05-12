@@ -9,6 +9,7 @@ declare module 'express' {
   }
 
   export interface Response {
+    status(code: number): this;
     json(body: unknown): void;
     setHeader(name: string, value: string | number | readonly string[]): void;
     write(chunk: string): void;
