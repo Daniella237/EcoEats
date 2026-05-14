@@ -6,6 +6,7 @@ import {
   postMarkOrderReady,
   postRefuseRestaurantOrder,
 } from '../api';
+import { useAppRouter } from '../lib/app-routing';
 import type { Restaurant, RestaurantOrderDto } from '../types';
 
 function isCommandOk(v: unknown): v is { ok: true } {
@@ -20,6 +21,7 @@ function reason(v: unknown): string {
 }
 
 export function KitchenOpsPage() {
+  const { navigate } = useAppRouter();
   const [catalog, setCatalog] = useState<readonly Restaurant[] | null>(null);
   const [restaurantId, setRestaurantId] = useState<string>('');
   const [orders, setOrders] = useState<readonly RestaurantOrderDto[]>([]);
@@ -81,7 +83,12 @@ export function KitchenOpsPage() {
     <div className="dr-ops-page">
       <header className="dr-ops-header">
         <h1>Espace cuisine (restaurateur)</h1>
-        <p>Acceptation, refus, passage en « prêt au retrait ».</p>
+        <p>
+          Acceptation, refus, passage en « prêt au retrait ».{' '}
+          <button type="button" className="dr-inline-link" onClick={() => navigate('/menu')}>
+            Gérer le menu
+          </button>
+        </p>
       </header>
 
       <div className="dr-ops-field">

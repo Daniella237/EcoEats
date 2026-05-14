@@ -849,3 +849,22 @@ tr.invoice-grand td {
 .dr-ops-actions-spaced {
   margin-bottom: 1rem;
 }
+
+.dr-menu-admin-form {
+  display: grid;
+  gap: 0.65rem;
+  max-width: 32rem;
+  margin-bottom: 1rem;
+}
+
+.dr-menu-admin-desc {
+  margin: 0.35rem 0 0;
+  color: var(--dr-muted, #5c6570);
+  font-size: 0.95rem;
+}
+
+.dr-menu-admin-all,
+.dr-menu-admin-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}

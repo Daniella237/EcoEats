@@ -3,6 +3,7 @@ import { CourierOpsPage } from './components/CourierOpsPage';
 import { KitchenOpsPage } from './components/KitchenOpsPage';
 import { AppRouterProvider, useAppRouter } from './lib/app-routing';
 import { ClientShopPage } from './pages/ClientShopPage';
+import { OwnerMenuPage } from './pages/OwnerMenuPage';
 
 function RoutedContent() {
   const { pathname } = useAppRouter();
@@ -11,6 +12,9 @@ function RoutedContent() {
   }
   if (pathname === '/livreur') {
     return <CourierOpsPage />;
+  }
+  if (pathname === '/menu') {
+    return <OwnerMenuPage />;
   }
   return <ClientShopPage />;
 }

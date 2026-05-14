@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-const ALLOWED = new Set(['/', '/cuisine', '/livreur']);
+const ALLOWED = new Set(['/', '/cuisine', '/livreur', '/menu']);
 
 function normalizePath(pathname: string): string {
   const trimmed = pathname.replace(/\/+$/, '');

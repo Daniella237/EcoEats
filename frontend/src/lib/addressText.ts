@@ -8,8 +8,7 @@ export function geocodeErrorMessage(code: string): string {
     missing_q: 'Saisissez une adresse.',
     not_found: 'Adresse introuvable. Précisez la ville ou le code postal.',
     geocode_upstream: 'Service d’adresse indisponible (vérifiez la connexion ou lancez l’API : npm run start:express).',
-    network:
-      'Impossible de joindre le serveur. Lancez l’API sur le port 3000 et le front avec Vite (proxy /api), ou utilisez le mode démo ci-dessous.',
+    network: 'Impossible de joindre le serveur. Utilisez le mode démo ci-dessous.',
     timeout: 'La recherche d’adresse a expiré. Réessayez ou utilisez le mode démo.',
     invalid_coordinates: 'Coordonnées invalides renvoyées par le service.',
   };

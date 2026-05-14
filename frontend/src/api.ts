@@ -6,6 +6,7 @@ import type {
   DetailsInvoice,
   InvoiceLineRow,
   ListRestaurantOrdersResponse,
+  MenuItem,
   PlaceOrderResult,
   Restaurant,
   RestaurantOrderDto,
@@ -357,6 +358,72 @@ export async function postMarkOrderReady(
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' },
   );
   return parseJson(r);
+}
+
+export type MenuOwnerMutationResult =
+  | { ok: true; restaurant: Restaurant }
+  | { ok: false; reason: string };
+
+export async function postOwnerMenuItem(
+  ownerId: string,
+  restaurantId: string,
+  item: Omit<MenuItem, 'id'> & { id?: string },
+): Promise<MenuOwnerMutationResult> {
+  const r = await fetch(
+    `${apiBase()}/api/owners/${encodeURIComponent(ownerId)}/restaurants/${encodeURIComponent(restaurantId)}/menu/items`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    },
+  );
+  return parseJson<MenuOwnerMutationResult>(r);
+}
+
+export async function patchOwnerMenuItem(
+  ownerId: string,
+  restaurantId: string,
+  menuItemId: string,
+  patch: Partial<Omit<MenuItem, 'id'>>,
+): Promise<MenuOwnerMutationResult> {
+  const r = await fetch(
+    `${apiBase()}/api/owners/${encodeURIComponent(ownerId)}/restaurants/${encodeURIComponent(restaurantId)}/menu/items/${encodeURIComponent(menuItemId)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    },
+  );
+  return parseJson<MenuOwnerMutationResult>(r);
+}
+
+export async function deleteOwnerMenuItem(
+  ownerId: string,
+  restaurantId: string,
+  menuItemId: string,
+): Promise<MenuOwnerMutationResult> {
+  const r = await fetch(
+    `${apiBase()}/api/owners/${encodeURIComponent(ownerId)}/restaurants/${encodeURIComponent(restaurantId)}/menu/items/${encodeURIComponent(menuItemId)}`,
+    { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: '{}' },
+  );
+  return parseJson<MenuOwnerMutationResult>(r);
+}
+
+export async function putOwnerMenuItemDailyStock(
+  ownerId: string,
+  restaurantId: string,
+  menuItemId: string,
+  dailyStock: number,
+): Promise<MenuOwnerMutationResult> {
+  const r = await fetch(
+    `${apiBase()}/api/owners/${encodeURIComponent(ownerId)}/restaurants/${encodeURIComponent(restaurantId)}/menu/items/${encodeURIComponent(menuItemId)}/daily-stock`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dailyStock }),
+    },
+  );
+  return parseJson<MenuOwnerMutationResult>(r);
 }
 
 export async function fetchDeliveryProposals(): Promise<readonly RestaurantOrderDto[]> {

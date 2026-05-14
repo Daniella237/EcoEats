@@ -90,3 +90,5 @@ export function createEcoHttpHandlers(root: EcoHttpRoot) {
     ) => root.store.subscribeIncomingOrders(restaurantId, listener),
   };
 }
+
+export type EcoHttpHandlers = ReturnType<typeof createEcoHttpHandlers>;
