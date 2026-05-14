@@ -4,6 +4,8 @@ import { AddItemToCartUseCase } from '../application/use-cases/add-item-to-cart.
 import { AddMenuItemUseCase } from '../application/use-cases/add-menu-item.use-case.js';
 import { BrowseAvailableMenusUseCase } from '../application/use-cases/browse-available-menus.use-case.js';
 import { CompleteDeliveryUseCase } from '../application/use-cases/complete-delivery.use-case.js';
+import { GetCourierByIdUseCase } from '../application/use-cases/get-courier-by-id.use-case.js';
+import { GetOrderByIdUseCase } from '../application/use-cases/get-order-by-id.use-case.js';
 import { ListDeliveryProposalsUseCase } from '../application/use-cases/list-delivery-proposals.use-case.js';
 import { ListRestaurantOrdersUseCase } from '../application/use-cases/list-restaurant-orders.use-case.js';
 import { MarkOrderReadyForPickupUseCase } from '../application/use-cases/mark-order-ready.use-case.js';
@@ -34,6 +36,8 @@ export function createMemoryEcoRoot(): {
   readonly listDeliveryProposals: ListDeliveryProposalsUseCase;
   readonly acceptDelivery: AcceptDeliveryUseCase;
   readonly completeDelivery: CompleteDeliveryUseCase;
+  readonly getOrderById: GetOrderByIdUseCase;
+  readonly getCourierById: GetCourierByIdUseCase;
 } {
   const store = new InMemoryEcoRepository();
   return {
@@ -53,5 +57,7 @@ export function createMemoryEcoRoot(): {
     listDeliveryProposals: new ListDeliveryProposalsUseCase(store),
     acceptDelivery: new AcceptDeliveryUseCase(store, store),
     completeDelivery: new CompleteDeliveryUseCase(store, store),
+    getOrderById: new GetOrderByIdUseCase(store),
+    getCourierById: new GetCourierByIdUseCase(store, store),
   };
 }

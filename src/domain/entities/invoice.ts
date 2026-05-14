@@ -14,14 +14,19 @@ export interface TotalOrders {
   readonly subTotalCents: number;
   readonly deliveryCents: number;
   readonly serviceCents: number;
+  /** Pourboire (centimes), payé par le client et reversé au livreur. */
+  readonly tipCents: number;
   readonly totalCents: number;
   readonly distanceKm: number;
   readonly deliveryExplanation: string;
   readonly serviceExplanation: string;
+  readonly tipExplanation: string;
 }
 
 /** Facture complète après paiement simulé réussi. */
 export type DetailsInvoice = TotalOrders & {
+  /** Identifiant de la commande cuisine / livraison (suivi client). */
+  readonly orderId: string;
   readonly invoiceNumber: string;
   readonly issuedAtIso: string;
   readonly restaurantId: string;

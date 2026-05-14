@@ -4,6 +4,7 @@ declare module 'express' {
 
   export interface Request {
     params: Record<string, string | undefined>;
+    query: Record<string, string | string[] | undefined>;
     body: unknown;
     on(event: string, listener: () => void): void;
   }

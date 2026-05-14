@@ -40,10 +40,15 @@ describe('PlaceOrderUseCase', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.invoice.lines.length).toBe(1);
+      expect(r.invoice.orderId).toMatch(/^[0-9a-f-]{36}$/i);
       expect(r.invoice.subTotalCents).toBe(2400);
+      expect(r.invoice.tipCents).toBe(100);
       expect(r.invoice.totalCents).toBe(
-        r.invoice.subTotalCents + r.invoice.deliveryCents + r.invoice.serviceCents,
+        r.invoice.subTotalCents + r.invoice.deliveryCents + r.invoice.serviceCents + r.invoice.tipCents,
       );
+      const persisted = await store.findOrderById(r.invoice.orderId);
+      expect(persisted).not.toBeNull();
+      expect(persisted?.id).toBe(r.invoice.orderId);
     }
   });
 

@@ -15,6 +15,21 @@ import type { PaidOrderCommitPort } from '../ports/paid-order-commit.port.js';
 
 export type SimulatePayment = 'success' | 'failure';
 
+/** Tolère number ou string JSON (ex. proxy / client legacy). */
+function normalizeTipCents(raw: unknown): number {
+  if (raw === undefined || raw === null) {
+    return 0;
+  }
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return Math.max(0, Math.round(raw));
+  }
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    const n = Number(raw.replace(',', '.'));
+    return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+  }
+  return 0;
+}
+
 export interface PlaceOrderInput {
   readonly cart: Cart;
   readonly customerLocation: GeoCoordination;
@@ -40,6 +55,7 @@ function buildTotals(
   restaurant: Restaurant,
   subtotal: number,
   customer: GeoCoordination,
+  tipCents: number,
 ): TotalOrders {
   const distanceKm = calculateDistance(restaurant.location, customer);
   const roundedKm = Math.round(distanceKm * 100) / 100;
@@ -52,7 +68,9 @@ function buildTotals(
     deliveryExplanation: `Forfait + 0,99 €/km (distance ${roundedKm.toFixed(2)} km à vol d'oiseau)`,
     serviceCents: platform,
     serviceExplanation: '10 % du sous-total plats (minimum 1,00 €)',
-    totalCents: totalPriceCents(subtotal, delivery, platform),
+    tipCents,
+    tipExplanation: 'Pourboire — intégralement reversé au livreur (aucune commission plateforme).',
+    totalCents: totalPriceCents(subtotal, delivery, platform, tipCents),
   };
 }
 
@@ -64,10 +82,7 @@ export class PlaceOrderUseCase {
 
   async execute(input: PlaceOrderInput): Promise<PlaceOrderResult> {
     const { cart, customerLocation, simulatePayment } = input;
-    const tipCents = input.tipCents ?? 0;
-    if (tipCents < 0 || !Number.isInteger(tipCents)) {
-      throw new RangeError('tipCents doit être un entier positif ou nul.');
-    }
+    const tipCents = normalizeTipCents(input.tipCents);
 
     if (cart.restaurantId === null || cart.lines.length === 0) {
       return { ok: false, reason: 'empty_cart' };
@@ -100,7 +115,7 @@ export class PlaceOrderUseCase {
     const priceById = new Map(invoiceLines.map((l) => [l.menuItemId, l.priceCents]));
     const subtotal = subTotalPriceCents(cart.lines, priceById);
 
-    const totals = buildTotals(restaurant, subtotal, customerLocation);
+    const totals = buildTotals(restaurant, subtotal, customerLocation, tipCents);
 
     if (simulatePayment === 'failure') {
       return { ok: false, reason: 'payment_refused', totals };
@@ -137,6 +152,7 @@ export class PlaceOrderUseCase {
 
     const invoice: DetailsInvoice = {
       ...totals,
+      orderId,
       invoiceNumber: `INV-${crypto.randomUUID()}`,
       issuedAtIso: new Date().toISOString(),
       restaurantId: restaurant.id,

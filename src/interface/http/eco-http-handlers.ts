@@ -80,6 +80,10 @@ export function createEcoHttpHandlers(root: EcoHttpRoot) {
     postCompleteDelivery: async (courierId: string, orderId: string) =>
       root.completeDelivery.execute(courierId, orderId),
 
+    getOrderById: async (orderId: string) => root.getOrderById.execute(orderId),
+
+    getCourierById: async (courierId: string) => root.getCourierById.execute(courierId),
+
     subscribeIncomingOrders: (
       restaurantId: string,
       listener: (e: { orderId: string; restaurantId: string }) => void,

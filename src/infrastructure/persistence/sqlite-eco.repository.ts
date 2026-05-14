@@ -293,6 +293,24 @@ export class SqliteEcoRepository
       );
   }
 
+  async listAssignedOrdersForCourier(courierId: string): Promise<readonly RestaurantOrder[]> {
+    const rows = this.db
+      .prepare('SELECT * FROM orders WHERE courier_id = ? AND delivery_phase = ?')
+      .all(courierId, 'assigned') as Array<{
+      id: string;
+      restaurant_id: string;
+      lines_json: string;
+      kitchen_status: string;
+      est_prep: number | null;
+      courier_id: string | null;
+      delivery_phase: string;
+      tip_cents: number;
+      delivery_distance_km: number;
+      created_at_iso: string;
+    }>;
+    return rows.map(parseOrder);
+  }
+
   async findCourierById(id: string): Promise<Courier | null> {
     const row = this.db.prepare('SELECT * FROM couriers WHERE id = ?').get(id) as
       | {

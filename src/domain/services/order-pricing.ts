@@ -26,7 +26,12 @@ export function servicePriceCents(subTotalCents: number): number {
     return Math.max(Math.round(subTotalCents * rate), min);
 }
 
-/** calcul du prix total de la commande */
-export function totalPriceCents(subTotalCents: number, deliveryCents: number, serviceCents: number): number {
-    return subTotalCents + deliveryCents + serviceCents;
+/** Total TTC côté client : plats + livraison + service plateforme + pourboire livreur. */
+export function totalPriceCents(
+  subTotalCents: number,
+  deliveryCents: number,
+  serviceCents: number,
+  tipCents: number,
+): number {
+  return subTotalCents + deliveryCents + serviceCents + tipCents;
 }

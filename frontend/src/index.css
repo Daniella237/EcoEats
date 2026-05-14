@@ -1,0 +1,44 @@
+:root {
+  color-scheme: light;
+  --dr-brand: #00c1a2;
+  --dr-brand-dark: #008f7a;
+  --dr-brand-soft: #ccf7f0;
+  --dr-bg: #f5f5f5;
+  --dr-surface: #ffffff;
+  --dr-text: #2e3333;
+  --dr-muted: #6e7675;
+  --dr-muted2: #8a9392;
+  --dr-border: #e8e8e8;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  line-height: 1.45;
+  color: var(--dr-text);
+  background: var(--dr-bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+input,
+select {
+  font: inherit;
+}

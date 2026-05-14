@@ -19,6 +19,62 @@ const h = createEcoHttpHandlers(root);
 const app = express();
 app.use(express.json());
 
+app.get('/api/geocode', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const raw = req.query.q;
+    const q = typeof raw === 'string' ? raw.trim() : '';
+    if (!q) {
+      res.status(400).json({ ok: false, error: 'missing_q' });
+      return;
+    }
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('limit', '1');
+    url.searchParams.set('q', q);
+    const upstreamController = new AbortController();
+    const upstreamTimer = setTimeout(() => upstreamController.abort(), 12_000);
+    let nominatimResponse: globalThis.Response;
+    try {
+      nominatimResponse = await fetch(url.toString(), {
+        signal: upstreamController.signal,
+        headers: {
+          'User-Agent': 'EcoEats/1.0 (projet pédagogique; pas de production)',
+          Accept: 'application/json',
+        },
+      });
+    } catch {
+      res.status(502).json({ ok: false, error: 'geocode_upstream' });
+      return;
+    } finally {
+      clearTimeout(upstreamTimer);
+    }
+    if (!nominatimResponse.ok) {
+      res.status(502).json({ ok: false, error: 'geocode_upstream' });
+      return;
+    }
+    const data = (await nominatimResponse.json()) as { lat?: string; lon?: string; display_name?: string }[];
+    const first = data[0];
+    if (!first?.lat || !first?.lon) {
+      res.status(404).json({ ok: false, error: 'not_found' });
+      return;
+    }
+    const latitude = Number(first.lat);
+    const longitude = Number(first.lon);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      res.status(502).json({ ok: false, error: 'invalid_coordinates' });
+      return;
+    }
+    res.json({
+      ok: true,
+      latitude,
+      longitude,
+      displayName: first.display_name ?? q,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.get('/api/catalog', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await h.getCatalog());
@@ -102,6 +158,32 @@ app.post('/api/cart/items/replace', async (req: Request, res: Response, next: Ne
 app.post('/api/orders/checkout', async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await h.postPlaceOrder(req.body as PlaceOrderInput));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/api/orders/:orderId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const order = await h.getOrderById(req.params.orderId!);
+    if (!order) {
+      res.status(404).json({ ok: false, reason: 'unknown_order' });
+      return;
+    }
+    res.json(order);
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/api/couriers/:courierId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const courier = await h.getCourierById(req.params.courierId!);
+    if (!courier) {
+      res.status(404).json({ ok: false, reason: 'unknown_courier' });
+      return;
+    }
+    res.json(courier);
   } catch (e) {
     next(e);
   }

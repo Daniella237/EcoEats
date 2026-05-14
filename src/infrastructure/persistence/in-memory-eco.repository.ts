@@ -74,6 +74,12 @@ export class InMemoryEcoRepository
     );
   }
 
+  async listAssignedOrdersForCourier(courierId: string): Promise<readonly RestaurantOrder[]> {
+    return [...this.orders.values()].filter(
+      (o) => o.courierId === courierId && o.deliveryPhase === 'assigned',
+    );
+  }
+
   async findCourierById(id: string): Promise<Courier | null> {
     return this.couriers.get(id) ?? null;
   }
