@@ -278,6 +278,55 @@ function toTipCents(raw: unknown): number {
   return 0;
 }
 
+function normalizeOrderDto(raw: unknown): RestaurantOrderDto | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const o = raw as Record<string, unknown>;
+  const id = typeof o.id === 'string' ? o.id : '';
+  if (!id) {
+    return null;
+  }
+  const ks = o.kitchenStatus ?? o.kitchen_status;
+  const dp = o.deliveryPhase ?? o.delivery_phase;
+  const linesRaw = o.lines;
+  const lines = Array.isArray(linesRaw)
+    ? linesRaw.map((line) => {
+        const l = line as Record<string, unknown>;
+        return {
+          menuItemId: String(l.menuItemId ?? l.menu_item_id ?? ''),
+          name: String(l.name ?? ''),
+          quantity: typeof l.quantity === 'number' ? l.quantity : Number(l.quantity) || 0,
+          unitPriceCents: readCentsDual(l, 'unitPriceCents', 'unit_price_cents'),
+        };
+      })
+    : [];
+  return {
+    id,
+    restaurantId: String(o.restaurantId ?? o.restaurant_id ?? ''),
+    lines,
+    kitchenStatus: (typeof ks === 'string' ? ks : 'pending_acceptance') as RestaurantOrderDto['kitchenStatus'],
+    estimatedPrepMinutes:
+      o.estimatedPrepMinutes === null || o.estimatedPrepMinutes === undefined
+        ? o.est_prep === null || o.est_prep === undefined
+          ? null
+          : Number(o.est_prep)
+        : Number(o.estimatedPrepMinutes),
+    courierId: typeof o.courierId === 'string' ? o.courierId : typeof o.courier_id === 'string' ? o.courier_id : null,
+    deliveryPhase: (typeof dp === 'string' ? dp : 'none') as RestaurantOrderDto['deliveryPhase'],
+    tipCents: readCentsDual(o, 'tipCents', 'tip_cents'),
+    deliveryDistanceKm: typeof o.deliveryDistanceKm === 'number' ? o.deliveryDistanceKm : Number(o.delivery_distance_km) || 0,
+    createdAtIso: String(o.createdAtIso ?? o.created_at_iso ?? ''),
+  };
+}
+
+function normalizeOrderList(raw: unknown): readonly RestaurantOrderDto[] {
+  if (Array.isArray(raw)) {
+    return raw.map((x) => normalizeOrderDto(x)).filter((x): x is RestaurantOrderDto => x !== null);
+  }
+  return [];
+}
+
 export async function checkout(input: {
   cart: Cart;
   customerLocation: { latitude: number; longitude: number };
@@ -306,7 +355,12 @@ export async function fetchOrder(orderId: string): Promise<RestaurantOrderDto | 
   if (!r.ok) {
     throw new Error(await r.text());
   }
-  return parseJson<RestaurantOrderDto>(r);
+  const raw = await parseJson<unknown>(r);
+  const normalized = normalizeOrderDto(raw);
+  if (!normalized) {
+    throw new Error('Réponse commande invalide');
+  }
+  return normalized;
 }
 
 export async function fetchRestaurantOrders(
@@ -431,7 +485,7 @@ export async function fetchDeliveryProposals(): Promise<readonly RestaurantOrder
   if (!r.ok) {
     throw new Error(await r.text());
   }
-  return parseJson<readonly RestaurantOrderDto[]>(r);
+  return normalizeOrderList(await parseJson<unknown>(r));
 }
 
 export async function fetchCourier(courierId: string): Promise<CourierDto | null> {

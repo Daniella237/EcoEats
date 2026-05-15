@@ -11,6 +11,23 @@ import {
 } from '../api';
 import type { CourierDto, RestaurantOrderDto } from '../types';
 
+async function fetchActiveOrderDetails(
+  deliveries: readonly { orderId: string }[],
+): Promise<Record<string, RestaurantOrderDto>> {
+  const out: Record<string, RestaurantOrderDto> = {};
+  for (const d of deliveries) {
+    try {
+      const o = await fetchOrder(d.orderId);
+      if (o) {
+        out[d.orderId] = o;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return out;
+}
+
 const COURIERS: readonly { id: string; label: string }[] = [
   { id: 'cour-standard', label: 'Standard (1 course à la fois)' },
   { id: 'cour-expert', label: 'Expert (plusieurs courses même resto)' },
@@ -42,6 +59,7 @@ export function CourierOpsPage() {
   const [courier, setCourier] = useState<CourierDto | null>(null);
   const [proposals, setProposals] = useState<readonly RestaurantOrderDto[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   /** Dernier livreur affiché (pour fusion si le GET renvoie activeDeliveries vide). */
   const courierUiRef = useRef<CourierDto | null>(null);
@@ -120,16 +138,29 @@ export function CourierOpsPage() {
 
   const refreshAll = useCallback(async () => {
     let nextCourier: CourierDto | null | undefined;
+    let courierFailed = false;
+    let proposalsFailed = false;
     try {
       nextCourier = await fetchCourier(courierId);
     } catch {
-      /* erreur réseau : ne pas toucher au livreur affiché */
+      courierFailed = true;
     }
     try {
       const p = await fetchDeliveryProposals();
       setProposals(p);
     } catch {
-      /* idem */
+      proposalsFailed = true;
+    }
+    if (courierFailed && proposalsFailed) {
+      setLoadErr('Impossible de joindre l’API. Vérifiez que le serveur Express tourne (npm run start:express).');
+    } else if (proposalsFailed) {
+      setLoadErr(
+        'Impossible de charger les propositions de livraison. Redémarrez l’API Express (npm run start:express) après une mise à jour du code.',
+      );
+    } else if (courierFailed) {
+      setLoadErr('Impossible de charger le profil livreur.');
+    } else {
+      setLoadErr(null);
     }
     if (nextCourier === undefined) {
       return;
@@ -156,19 +187,10 @@ export function CourierOpsPage() {
     setCourier(merged);
     courierUiRef.current = merged;
 
-    setOrderByActiveId((prevSnap) => {
-      const allowed = new Set(merged.activeDeliveries.map((d) => d.orderId));
-      if (allowed.size === 0) {
-        return prevSnap;
-      }
-      const out: Record<string, RestaurantOrderDto> = {};
-      for (const id of allowed) {
-        if (prevSnap[id]) {
-          out[id] = prevSnap[id];
-        }
-      }
-      return out;
-    });
+    if (merged.activeDeliveries.length > 0) {
+      const details = await fetchActiveOrderDetails(merged.activeDeliveries);
+      setOrderByActiveId((prevSnap) => ({ ...prevSnap, ...details }));
+    }
   }, [courierId]);
 
   useEffect(() => {
@@ -326,8 +348,12 @@ export function CourierOpsPage() {
         <button type="button" className="dr-btn dr-btn-muted" disabled={busy} onClick={() => void setAvailability('unavailable')}>
           Indisponible
         </button>
+        <button type="button" className="dr-btn dr-btn-muted" disabled={busy} onClick={() => void refreshAll()}>
+          Actualiser
+        </button>
       </div>
 
+      {loadErr ? <p className="dr-modal-error">{loadErr}</p> : null}
       {msg ? <p className="dr-ops-banner">{msg}</p> : null}
 
       <h2 className="dr-ops-sub">Courses actives</h2>
@@ -364,7 +390,7 @@ export function CourierOpsPage() {
 
       <h2 className="dr-ops-sub">Propositions ouvertes (sans livreur, en préparation ou prêt)</h2>
       {proposals.length === 0 ? (
-        <p className="dr-empty">Aucune proposition pour le moment.</p>
+        loadErr ? null : <p className="dr-empty">Aucune proposition pour le moment.</p>
       ) : (
         <ul className="dr-ops-list">
           {proposals.map((o) => (

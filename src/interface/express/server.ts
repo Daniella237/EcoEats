@@ -176,6 +176,15 @@ app.get('/api/orders/:orderId', async (req: Request, res: Response, next: NextFu
   }
 });
 
+/** Route littérale avant `:courierId`, sinon Express traite « delivery-proposals » comme un id livreur. */
+app.get('/api/couriers/delivery-proposals', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await h.getDeliveryProposals());
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.get('/api/couriers/:courierId', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const courier = await h.getCourierById(req.params.courierId!);
@@ -269,14 +278,6 @@ app.post('/api/couriers/:courierId/availability', async (req: Request, res: Resp
         (req.body as { availability: 'available' | 'unavailable' }).availability,
       ),
     );
-  } catch (e) {
-    next(e);
-  }
-});
-
-app.get('/api/couriers/delivery-proposals', async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json(await h.getDeliveryProposals());
   } catch (e) {
     next(e);
   }

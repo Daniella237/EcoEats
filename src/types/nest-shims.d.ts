@@ -18,6 +18,7 @@ declare module '@nestjs/common' {
   }): ClassDecorator;
 
   export function Controller(prefix?: string): ClassDecorator;
+  export function Get(path?: string): MethodDecorator;
   export function Post(path?: string): MethodDecorator;
   export function Patch(path?: string): MethodDecorator;
   export function Put(path?: string): MethodDecorator;
